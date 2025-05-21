@@ -1,25 +1,25 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
 const cors = require("cors");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
+app.use(express.json());
 
+// Root Route
 app.get("/", (req, res) => {
-  res.send("Hello I am your Server!");
+  res.send("Hello, I am your Server!");
 });
 
-app.listen(port, () => {
-  console.log(`Server app running from port ${port}`);
-});
+// MongoDB URI
+const uri = process.env.MONGODB_URI || 
+  `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_USERPASS}@cluster0.a3y11iq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-
-const uri = `mongodb+srv://${process.env.DBUSERNAME}:${process.env.DBUSERPASS}@cluster0.a3y11iq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// MongoDB Client
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -28,18 +28,38 @@ const client = new MongoClient(uri, {
   },
 });
 
+// Collection variable defined outside so routes can access it
+let recipeCollection;
+
+// MongoDB connection inside run()
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+    console.log("✅ Connected to MongoDB");
+
+    // Assign the collection so it's available globally
+    recipeCollection = client.db("recipebook").collection("recipes");
+  } catch (error) {
+    console.error("❌ MongoDB connection failed:", error);
   }
 }
 run().catch(console.dir);
+
+// Now route is defined outside run(), but can use recipeCollection
+app.get("/recipes", async (req, res) => {
+  try {
+    if (!recipeCollection) {
+      return res.status(503).send({ message: "Database not connected yet" });
+    }
+    const recipes = await recipeCollection.find().toArray();
+    res.send(recipes);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch recipes", error });
+  }
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
+});
