@@ -4,7 +4,7 @@ const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = 5000;
 
 // Middleware
 app.use(cors());
@@ -16,8 +16,7 @@ app.get("/", (req, res) => {
 });
 
 // MongoDB URI
-const uri = process.env.MONGODB_URI || 
-  `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_USERPASS}@cluster0.a3y11iq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DBUSERNAME}:${process.env.DBUSERPASS}@cluster0.a3y11iq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // MongoDB Client
 const client = new MongoClient(uri, {
@@ -30,6 +29,7 @@ const client = new MongoClient(uri, {
 
 // Collection variable defined outside so routes can access it
 let recipeCollection;
+let userCollection;
 
 // MongoDB connection inside run()
 async function run() {
@@ -40,22 +40,43 @@ async function run() {
 
     // Assign the collection so it's available globally
     recipeCollection = client.db("recipebook").collection("recipes");
+    userCollection = client.db("recipebook").collection("users");
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error);
   }
 }
 run().catch(console.dir);
 
-// Now route is defined outside run(), but can use recipeCollection
+// RoutesAPI managing dbData
+// GET ALL THE RECIPES
 app.get("/recipes", async (req, res) => {
   try {
-    if (!recipeCollection) {
-      return res.status(503).send({ message: "Database not connected yet" });
-    }
+    // if (!recipeCollection) {
+    //   return res.status(503).send({ message: "Database not connected yet" });
+    // }
     const recipes = await recipeCollection.find().toArray();
     res.send(recipes);
   } catch (error) {
     res.status(500).send({ message: "Failed to fetch recipes", error });
+  }
+});
+// create user to db
+app.post("/users", async (req, res) => {
+  const userInfo = req.body;
+  try {
+    const existingUser = await userCollection.findOne({
+      email: userInfo.email,
+    });
+    if (existingUser) {
+      return res.send({
+        success: false,
+        message: "User already exists with this email",
+      });
+    }
+    const result = await userCollection.insertOne(userInfo);
+    res.send(result);
+  } catch (error) {
+    res.send(error);
   }
 });
 
