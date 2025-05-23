@@ -57,6 +57,19 @@ app.get("/recipes", async (req, res) => {
     res.send({ message: "Failed to fetch recipes", error });
   }
 });
+
+// sorted recipes by like count
+app.get("/recipes/sort-by-like", async (req, res) => {
+  try {
+    const recipes = await recipeCollection
+      .find()
+      .sort({ likeCount: -1 })
+      .toArray();
+    res.send(recipes);
+  } catch (error) {
+    res.send({ message: "Failed to fetch recipes", error });
+  }
+});
 // get one recipe by id
 app.get("/recipes/:id", async (req, res) => {
   try {
@@ -99,7 +112,7 @@ app.post("/add-recipe", async (req, res) => {
   try {
     const result = await recipeCollection.insertOne(recipeData);
     res.send(result);
-  } catch (error) { 
+  } catch (error) {
     res.send(error);
   }
 });
@@ -140,13 +153,16 @@ app.get("/my-recipes", async (req, res) => {
       return res.status(400).send({ message: "Email is required" });
     }
 
-    const userRecipes = await recipeCollection.find({ authorEmail: email }).toArray();
+    const userRecipes = await recipeCollection
+      .find({ authorEmail: email })
+      .toArray();
     res.send(userRecipes);
   } catch (error) {
     res.send({ message: "Failed to fetch user's recipes", error });
   }
 });
 
+// delete userAddedRecipe
 app.delete("/recipes/:id", async (req, res) => {
   const id = req.params.id;
 
@@ -163,7 +179,23 @@ app.delete("/recipes/:id", async (req, res) => {
   }
 });
 
+// update recipe of users
+app.put("/recipes/:id", async (req, res) => {
+  const id = req.params.id;
+  const updatedData = req.body;
 
+  try {
+    const result = await recipeCollection.updateOne(
+      {
+        _id: new ObjectId(id),
+      },
+      { $set: updatedData }
+    );
+    res.send(result);
+  } catch (error) {
+    res.send(error);
+  }
+});
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
