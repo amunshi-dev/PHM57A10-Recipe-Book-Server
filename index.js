@@ -200,3 +200,4 @@ app.put("/recipes/:id", async (req, res) => {
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
+module.exports = (req, res) => app(req, res);
