@@ -1,10 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
-const port = 5000;
+const port = 3000;
 
 // Middleware
 app.use(cors());
@@ -51,13 +51,26 @@ run().catch(console.dir);
 // GET ALL THE RECIPES
 app.get("/recipes", async (req, res) => {
   try {
-    // if (!recipeCollection) {
-    //   return res.status(503).send({ message: "Database not connected yet" });
-    // }
     const recipes = await recipeCollection.find().toArray();
     res.send(recipes);
   } catch (error) {
     res.status(500).send({ message: "Failed to fetch recipes", error });
+  }
+});
+// get one recipe by id
+app.get("/recipes/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    // Validate ObjectId
+    const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!recipe) {
+      return res.send({ message: "Recipe not found" });
+    }
+
+    res.send(recipe);
+  } catch (error) {
+    res.send(error);
   }
 });
 // create user to db
@@ -80,6 +93,15 @@ app.post("/users", async (req, res) => {
   }
 });
 
+app.post("/add-recipe", async (req, res) => {
+  const recipeData = req.body;
+  try {
+    const result = await recipeCollection.insertOne(recipeData);
+    res.send(result);
+  } catch (error) {
+    res.send(error);
+  }
+});
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
