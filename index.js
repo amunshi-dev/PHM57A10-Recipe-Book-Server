@@ -132,6 +132,23 @@ app.patch("/recipes/:id", async (req, res) => {
   }
 });
 
+// GET /my-recipes?email=user@example.com
+app.get("/my-recipes", async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).send({ message: "Email is required" });
+    }
+
+    const userRecipes = await recipeCollection.find({ authorEmail: email }).toArray();
+    res.send(userRecipes);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch user's recipes", error });
+  }
+});
+
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
