@@ -54,7 +54,7 @@ app.get("/recipes", async (req, res) => {
     const recipes = await recipeCollection.find().toArray();
     res.send(recipes);
   } catch (error) {
-    res.status(500).send({ message: "Failed to fetch recipes", error });
+    res.send({ message: "Failed to fetch recipes", error });
   }
 });
 // get one recipe by id
@@ -143,10 +143,25 @@ app.get("/my-recipes", async (req, res) => {
     const userRecipes = await recipeCollection.find({ authorEmail: email }).toArray();
     res.send(userRecipes);
   } catch (error) {
-    res.status(500).send({ message: "Failed to fetch user's recipes", error });
+    res.send({ message: "Failed to fetch user's recipes", error });
   }
 });
 
+app.delete("/recipes/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const result = await recipeCollection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 1) {
+      res.send({ success: true, message: "Recipe deleted successfully" });
+    } else {
+      res.send({ success: false, message: "Recipe not found" });
+    }
+  } catch (error) {
+    res.send(error);
+  }
+});
 
 
 // Start the server
