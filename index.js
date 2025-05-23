@@ -93,15 +93,45 @@ app.post("/users", async (req, res) => {
   }
 });
 
+// add recipe api
 app.post("/add-recipe", async (req, res) => {
   const recipeData = req.body;
   try {
     const result = await recipeCollection.insertOne(recipeData);
     res.send(result);
-  } catch (error) {
+  } catch (error) { 
     res.send(error);
   }
 });
+
+// PATCH: increment like count
+app.patch("/recipes/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!recipe) {
+      return res.send({ message: "Recipe not found" });
+    }
+
+    const newLikeCount = (recipe.likeCount || 0) + 1;
+
+    const result = await recipeCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { likeCount: newLikeCount } }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.send({ likeCount: newLikeCount });
+    } else {
+      res.send({ message: "Failed to update like count" });
+    }
+  } catch (error) {
+    res.send({ message: "Error updating like count", error });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
